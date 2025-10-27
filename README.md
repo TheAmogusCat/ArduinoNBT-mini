@@ -1,4 +1,4 @@
-# ArduinoNBT Library
+# ArduinoNBT-mini Library
 ### A library for arduino to work with NBT data
 
 ### Installing
