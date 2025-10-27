@@ -3,7 +3,7 @@
 
 ### Installing
 1) Download the project
-2) Put **nbt.h** and **nbt.cpp** into your project folder
+2) Put **nbt.h** into your project folder
 
 ### Usage:
 
