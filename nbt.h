@@ -36,6 +36,8 @@ inline size_t writeName(byte* buffer, const char* name, uint16_t nameLength = 0)
   if (nameLength == 0)
     nameLength = strlen(name);
 
+  if (nameLength == 0)
+    return 0;
   // Write name length in big-endian format
   buffer[pos++] = (nameLength >> 8) & 0xFF;
   buffer[pos++] = nameLength & 0xFF;
@@ -47,7 +49,7 @@ inline size_t writeName(byte* buffer, const char* name, uint16_t nameLength = 0)
   return pos;
 }
 
-}
+} // namespace detail
 
 
 class NBTCompoundTag {
@@ -79,33 +81,32 @@ public:
   char nameBuf[MAX_NAME_LEN];
 
   NBTCompoundTag(const char* n, size_t s) : size(s), pos(1) {
+    buffer = new byte[s];
+
+    buffer[0] = ID_TAG_COMPOUND;
+
     size_t len = strlen(n);
     if (len >= MAX_NAME_LEN) {
       len = MAX_NAME_LEN - 1;
     }
 
-    memcpy(nameBuf, n, len);
-    nameBuf[len] = '\0';
+    if (len > 0) {
+      memcpy(nameBuf, n, len);
+      nameBuf[len] = '\0';
+
+      // Writing name
+      pos += detail::writeName(buffer + pos, n);
+    } else {
+      nameBuf[0] = '\0';
+    }
     nameLength = static_cast<uint16_t>(len);
-
-    buffer = new byte[s];
-
-    buffer[0] = ID_TAG_COMPOUND;
-
-    // Writing name
-    pos += detail::writeName(buffer + pos, n);
   }
 
   void pushByte(const char* key, byte value) { pushNumberInPlace(key, value, ID_TAG_BYTE); }
-
   void pushShort(const char* key, int16_t value) { pushNumberInPlace(key, value, ID_TAG_SHORT); }
-
   void pushInt(const char* key, int32_t value) { pushNumberInPlace(key, value, ID_TAG_INT); }
-
   void pushLong(const char* key, int64_t value) { pushNumberInPlace(key, value, ID_TAG_LONG); }
-
   void pushFloat(const char* key, float value) { pushNumberInPlace(key, value, ID_TAG_FLOAT); }
-
   void pushDouble(const char* key, double value) { pushNumberInPlace(key, value, ID_TAG_DOUBLE); }
 
   void pushString(const char* key, const char* value) {
@@ -121,13 +122,27 @@ public:
     pos += valueLen;
   }
 
-  void pushBytes(byte* value, size_t s) {
+  void pushBytes(const byte* value, size_t s) {
     if (pos + s <= size) {
       memcpy(buffer + pos, value, s);
       pos += s;
     }
   }
 
+  // Возвращает необходимый размер без конца (последний байт ID_TAG_END добавится при serialize)
+  size_t getUsed() const {
+    return pos;
+  }
+
+  // Безопасная сериализация: проверяет, что bufSize >= pos + 1
+  size_t serialize(byte* buf, size_t bufSize) const {
+    if (bufSize < pos + 1) return 0;
+    memcpy(buf, buffer, pos);
+    buf[pos] = ID_TAG_END;
+    return pos + 1;
+  }
+
+  // Старый интерфейс - сохраняет обратную совместимость (без проверки) — но старайся не использовать.
   size_t serialize(byte* buf) const {
     memcpy(buf, buffer, pos);
     buf[pos] = ID_TAG_END;
@@ -143,4 +158,4 @@ public:
   }
 };
 
-}
+} // namespace nbt
