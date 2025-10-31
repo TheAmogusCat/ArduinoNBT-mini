@@ -23,8 +23,9 @@ NBTCompoundTag compound("My Compound Tag", 100);
 compound.pushInt("My Int", 777);
 
 // Serializing Compound Tag
-byte buffer[100];
-size_t size = compound.serialize(buffer);
+size_t bufferSIze = 100;
+byte buffer[bufferSize];
+size_t size = compound.serialize(buffer, bufferSize);
 ```
 Available methods in Compound Tag:
 - pushByte
